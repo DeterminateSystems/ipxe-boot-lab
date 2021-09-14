@@ -1,0 +1,224 @@
+{
+    "id": "7b120850-55cf-4fa9-ab90-0492289e9852",
+    "hostname": "flexo.gsc.io",
+    "iqn": "iqn.2019-05.net.packet:device.7b120850",
+    "operating_system": {
+        "slug": "nixos_19_03",
+        "distro": "nixos",
+        "version": "19.03",
+        "license_activation": {
+            "state": "unlicensed"
+        },
+        "image_tag": "5e26d2278a871ec2fd0a4332267dab7b1f44adaa"
+    },
+    "plan": "baremetal_0",
+    "reserved": false,
+    "class": "t1.small.x86",
+    "facility": "ewr1",
+    "metro": "ny",
+    "private_subnets": [
+        "10.0.0.0/8"
+    ],
+    "tags": [],
+    "ssh_keys": [
+        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCWapO5NQhpX4/57sTBp2i0LAeMcYMGMnlqh+xetDDMYKC08qT8izY0ZDu7cISPvR6FW9SYujwMaUHQzO5wJBER83swij66Pe4hgWkTPIQVJk07VRqD4uBabpZW+eAOsU1VNDv/QHj+1RWwiiQOGFnMTzRIaBx/ki5t+hbO42gliiHitSBMy7/ChWvi2hfTo5BwitbdmLGr6+uUrQm8t7PO2U+PYPESG/pYE/wJxTmfhuinkdZ/XGx+MBTpxGKyBzV3XfFk4Y9IxrpmNNcf4Zc7JOTQAr3jIvl5fELV3fJ7uiRLB80kAJ0hpwAyath+q4Vb4PVRCc5PN7N7po4i931X grahamc@Morbo\n",
+        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDa8JEOIubMB6khJYaY2q7fpco+q5RCo5HHwdUrngR4kGCXvdeou0tNldMrR0mshIDBJ4VoI0rTFUe3Sb8W+7iknxHSsY6+7fzQ2DvW7JYmtprEJrlOheqKWzjtLgR1hERDugM1LvFGUUpUj5mZpC2yzJnOuc/jlZ1KWjcK44YyJveqxo128Kv3Xqiz85Bt+nAD69cDs8LzOzvH6YI7RcPmzo04h01eJqcGY3lbOmbfJFvJyB8RhJx7phIALmo3BWITKcc00Hyw52tu86WzMPQuSEn5e9Fel6SL/sdLpxT4V9e8v64TrsNPQrGEw+C2MRYHLE5gqKDLMy/ZK8dA5TMF gchristensen@Lrr.local",
+        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDY8wRHQtq9uBzdiAYzpSNmF+nmIHmW+AOeBTDNmdva+CFGIBbB56q7w6GCOhfXs8edrPY4qOcQGaOD0ussIvHnqkVfw8e6CbxnpXKeAuIz7+1V72AhLPzOkif4yPrI6tSYF5nvzq6U4Yk1qFnXiLQjkA1s4EcZH6V0KbHMsu7Mtv3Irspdn8KUI3j2UwZcssFu1EuLHhLNussziRQK9tOg9ixb0U1WXuUJn7Noh9odTAsAt6jLFdr5eN/IINgC9WQqvY/W94Tc2/z5TWR7z382pEkMBR/3sf+nYKA82069tagkyrtJ/YXi00CWU4vjpnMvwPEYcmtCddfCPi8ZIUrn grahamc@Morbo",
+        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDFSwa8cFdYhwMQpc3JvgU9GyYY+pOhYDngXXiKkocUcbBmS0CPDY8HuypnJLigSMrsXMVv/RD3K2AqO5DyUY5H2hMXzD8toeiiDUWru5ig9waPz8YVf1w+XNIu5d7wK9Hw5sGRF5BmKcOylNR7Jsc8ISavZjVqhqP9Mdhq0xVbICUYCHCKfmk5Tnnj440bi3Csqa1FwXNKpBqNMTn6eZLIxA7bvpib4sYhLULD1WJk2zyEMBduG2IBQ20MSqVPldLqpZp9VHTrISomPDgKnFoUoL7jwaCWuiWo4FNPVnhmxzFeyb9E3UPMVlEk0Smis8MrVfdof70QUA5LbN48wbGR grahamc@Morbo\n",
+        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDDTZB6tOYfEmWkYff494DjPpzo45ymhTvEPT4rjPyeTfBB1p+odbaVnYFQPgwk4MYBZyPjzQa9NLC76m2kCDNqnasBFGhTLxSfR9q/4J5G9x0a5NvA/emqNpjtbT25UADjhEETOIYjLYdd7z9rGFr/8ttmJNog6t9NIEw7/ddupzpvNaK80rdPSO7jt4/3TxFiix3yvaTNe4XahCiEDNIXF0hskOTuFtUX4LgiET9lmJa92i/Oh/7oYxDBond6C95HyoppGJu6y3txutAWt12N5rLRzWSPECwrJRNcXIqmIjofl+pt4vd7D4DHCxesKajG4fAs+KXZ3Lxug2dZB0eD grahamc@nixos",
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB2LEAcTqOhZ3+zv6/VO+4Tts5pkm/tnDt0TIaIAVr+O grahamc@Petunia\n",
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILBPW2syaEH82DrqIl8/7/ypTgyfK8CRRTBEA4AmMB1l grahamc@nixos\n"
+    ],
+    "storage": {
+        "disks": [
+            {
+                "device": "/dev/sda",
+                "wipeTable": true,
+                "partitions": [
+                    {
+                        "label": "BIOS",
+                        "number": 1,
+                        "size": 4096
+                    },
+                    {
+                        "label": "SWAP",
+                        "number": 2,
+                        "size": "3993600"
+                    },
+                    {
+                        "label": "ROOT",
+                        "number": 3,
+                        "size": 0
+                    }
+                ]
+            }
+        ],
+        "filesystems": [
+            {
+                "mount": {
+                    "device": "/dev/sda3",
+                    "format": "ext4",
+                    "point": "/",
+                    "create": {
+                        "options": [
+                            "-L",
+                            "ROOT"
+                        ]
+                    }
+                }
+            },
+            {
+                "mount": {
+                    "device": "/dev/sda2",
+                    "format": "swap",
+                    "point": "none",
+                    "create": {
+                        "options": [
+                            "-L",
+                            "SWAP"
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "customdata": {},
+    "specs": {
+        "cpus": [
+            {
+                "count": 1,
+                "type": "Intel Atom C2550 @ 2.4Ghz"
+            }
+        ],
+        "memory": {
+            "total": "8GB"
+        },
+        "drives": [
+            {
+                "count": 1,
+                "size": "80GB",
+                "type": "SSD"
+            }
+        ],
+        "nics": [
+            {
+                "count": 2,
+                "type": "1Gbps"
+            }
+        ],
+        "features": {
+            "raid": false,
+            "txt": true,
+            "uefi": false
+        }
+    },
+    "switch_short_id": "e2e4b13c",
+    "volumes": [],
+    "bgp_neighbors": [
+        {
+            "address_family": 4,
+            "customer_as": 65000,
+            "customer_ip": "10.100.5.3",
+            "md5_enabled": true,
+            "md5_password": "HbtngvQMJV7Tm7GuIFox",
+            "multihop": false,
+            "peer_as": 65530,
+            "peer_ips": [
+                "10.100.5.2"
+            ],
+            "routes_in": [
+                {
+                    "route": "147.75.96.102/31",
+                    "exact": false
+                },
+                {
+                    "route": "10.100.5.0/25",
+                    "exact": false
+                }
+            ],
+            "routes_out": []
+        }
+    ],
+    "network": {
+        "bonding": {
+            "mode": 5,
+            "link_aggregation": "bonded",
+            "mac": "52:54:00:12:34:56"
+        },
+        "interfaces": [
+            {
+                "name": "enp0s20f0",
+                "mac": "52:54:00:12:34:56",
+                "bond": "bond0"
+            },
+            {
+                "name": "enp0s20f1",
+                "mac": "52:54:00:12:34:57",
+                "bond": "bond0"
+            }
+        ],
+        "addresses": [
+            {
+                "id": "3292bc17-274f-48d1-9964-8a1f649399b0",
+                "address_family": 4,
+                "netmask": "255.255.255.254",
+                "created_at": "2019-05-18T12:19:11Z",
+                "public": true,
+                "cidr": 31,
+                "management": true,
+                "enabled": true,
+                "network": "147.75.105.136",
+                "address": "147.75.105.137",
+                "gateway": "147.75.105.136",
+                "parent_block": {
+                    "network": "147.75.105.136",
+                    "netmask": "255.255.255.254",
+                    "cidr": 31,
+                    "href": "/ips/7c097ad3-2192-4866-b0ad-a6596026a258"
+                }
+            },
+            {
+                "id": "f0e078b3-2a46-410c-bf81-14904bc4ecea",
+                "address_family": 6,
+                "netmask": "ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe",
+                "created_at": "2019-05-18T12:19:10Z",
+                "public": true,
+                "cidr": 127,
+                "management": true,
+                "enabled": true,
+                "network": "2604:1380:0:d00::2",
+                "address": "2604:1380:0:d00::3",
+                "gateway": "2604:1380:0:d00::2",
+                "parent_block": {
+                    "network": "2604:1380:0000:0d00:0000:0000:0000:0000",
+                    "netmask": "ffff:ffff:ffff:ff00:0000:0000:0000:0000",
+                    "cidr": 56,
+                    "href": "/ips/d815b268-bd15-4e56-9b47-f6934779329c"
+                }
+            },
+            {
+                "id": "98af000e-3431-4d21-8c9c-eabeed5b3713",
+                "address_family": 4,
+                "netmask": "255.255.255.254",
+                "created_at": "2019-05-18T12:19:10Z",
+                "public": false,
+                "cidr": 31,
+                "management": true,
+                "enabled": true,
+                "network": "10.100.5.2",
+                "address": "10.100.5.3",
+                "gateway": "10.100.5.2",
+                "parent_block": {
+                    "network": "10.100.5.0",
+                    "netmask": "255.255.255.128",
+                    "cidr": 25,
+                    "href": "/ips/d3bdd32c-293e-42f1-8555-e4bc512f1017"
+                }
+            }
+        ],
+        "metal_gateways": []
+    },
+    "api_url": null,
+    "phone_home_url": null,
+    "user_state_url": null
+}
