@@ -27,10 +27,7 @@ metadata() {
 
   mkdir -p "$metadata_api_dir"
   cp "$file" "$metadata_api_dir/metadata.json"
-  
-  jq -cn '$ARGS.named' \
-    --arg rows "$(tput lines)" \
-    --arg cols "$(tput cols)" > "$metadata_api_dir/stty.json"
+
   # todo: userdata, customdata support
 
   cat <<EOT
@@ -116,7 +113,6 @@ cmd+=(
   '-machine q35,smm=on'
   '-msg timestamp=on'
   '-nographic'
-  $(stty)
   $(metadata)
   $(interfaces)
   $(drives)
