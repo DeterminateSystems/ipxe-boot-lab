@@ -14,10 +14,11 @@ while ! ip link show br0; do
 done
 
 cd .. || exit 1
-mkdir -p scratch/gc-roots scratch/cpio-cache
+mkdir -p scratch/gc-roots scratch/cpio-cache scratch/profiles
 cd nix-netboot-serve || exit 1
 RUST_LOG=example::api cargo run -- \
   --gc-root-dir ../scratch/gc-roots \
   --cpio-cache-dir ../scratch/cpio-cache/ \
+  --profile-dir ../scratch/profiles/ \
   --config-dir ../nixos-install-equinix-metal/configurations/types \
   --listen 0.0.0.0:3030
