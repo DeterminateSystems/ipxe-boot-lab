@@ -12,6 +12,12 @@ pkgs.mkShell {
     pkgs.slirp4netns
     pkgs.vim # xxd
     pkgs.ncurses # tput
-    pkgs.jq 
+    pkgs.jq
+    pkgs.black
   ];
+
+  shellHook = ''
+    cp -f ${pkgs.OVMF.fd}/FV/OVMF_*.fd .
+    chmod 644 ./OVMF_VARS.fd
+  '';
 }
