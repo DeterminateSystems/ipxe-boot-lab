@@ -12,6 +12,8 @@ pkgs.mkShell {
     pkgs.slirp4netns
     pkgs.vim # xxd
     pkgs.ncurses # tput
-    pkgs.jq 
+    pkgs.jq
   ];
+
+  OVMF_PATH = pkgs.OVMF.fd;
 }
