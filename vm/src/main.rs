@@ -12,8 +12,11 @@ use qapi::{qmp, Qmp};
 use structopt::StructOpt;
 
 mod meta;
+mod tty_handler;
 
 use meta::{Drive, DriveType, Metadata, NetworkInterface};
+use tty_handler::QemuHandler;
+use tty_handler::{manual::Manual, stdout::Stdout};
 
 pub(crate) type Result<T, E = Box<dyn Error + Send + Sync + 'static>> = core::result::Result<T, E>;
 
@@ -32,17 +35,31 @@ fn validate_is_file(path: String) -> Result<(), String> {
 struct Args {
     #[structopt(required = true, validator = validate_is_file)]
     meta_file: PathBuf,
+    #[structopt(long)]
+    non_interactive: bool,
 }
 
 fn main() -> Result<()> {
     let args = Args::from_args();
+    let non_interactive = args.non_interactive || !atty::is(atty::Stream::Stdout);
     let meta_file = fs::canonicalize(args.meta_file)?;
 
     let reader = BufReader::new(File::open(&meta_file)?);
     let meta: Metadata = serde_json::from_reader(reader)?;
 
     let temp_dir = tempfile::tempdir()?;
-    let sock_path = format!("{}/qmp-sock", &temp_dir.path().display());
+    let sock_path = temp_dir.path().join("qmp-sock");
+    let handler: Box<dyn QemuHandler> = if non_interactive {
+        Box::new(Stdout {
+            monitor: String::from("mon0"),
+            serials: vec![String::from("ttyS0"), String::from("ttyS1")],
+        })
+    } else {
+        Box::new(Manual {
+            monitor: String::from("mon0"),
+            serials: vec![String::from("ttyS0"), String::from("ttyS1")],
+        })
+    };
 
     let mut cmd = Command::new("qemu-kvm");
 
@@ -53,14 +70,17 @@ fn main() -> Result<()> {
     cmd.args(["-machine", "q35,smm=on"]);
     cmd.args(["-m", "16G"]);
     cmd.args(["-cpu", "max"]);
-    cmd.args(["-chardev", "pty,id=ttyS0"]);
-    cmd.args(["-chardev", "pty,id=ttyS1"]);
-    cmd.args(["-chardev", "pty,id=mon0"]);
+
+    cmd.args(handler.qemu_args());
+
     cmd.args(["-serial", "chardev:ttyS0"]);
     cmd.args(["-serial", "chardev:ttyS1"]);
     cmd.args(["-mon", "chardev=mon0"]);
     cmd.args(["-msg", "timestamp=on"]);
-    cmd.args(["-qmp", &format!("unix:{},server=on,wait=off", sock_path)]);
+    cmd.args([
+        "-qmp",
+        &format!("unix:{},server=on,wait=off", sock_path.display()),
+    ]);
 
     cmd.args(self::metadata(&meta_file, &temp_dir)?);
     cmd.args(self::interfaces(meta.network.interfaces, &temp_dir)?);
@@ -69,33 +89,19 @@ fn main() -> Result<()> {
 
     let mut child = cmd.current_dir(&temp_dir.path()).spawn()?;
 
-    while !Path::new(&sock_path).exists() {}
+    while !sock_path.exists() {}
 
     let stream = UnixStream::connect(sock_path).expect("Failed to connect to QMP socket");
     let mut qmp = Qmp::from_stream(&stream);
 
     qmp.handshake().expect("Failed to handshake with QMP");
 
-    let chardevs = qmp
-        .execute(&qmp::query_chardev {})
-        .expect("query_chardev failed");
-
-    // TODO: setup tmux for each chardev, name tab based on label
-    // TODO: run `screen [chardev]` inside tmux lol
-    for dev in chardevs {
-        if !["mon0", "ttyS0", "ttyS1"].iter().any(|n| n == &dev.label) {
-            continue;
-        }
-
-        println!(
-            ": {} ; screen {} 115200",
-            dev.label,
-            dev.filename.trim_start_matches("pty:")
-        );
-    }
-
-    // give you time to run screen
-    std::thread::sleep_ms(5000);
+    handler.setup(&mut qmp).map_err(|e| {
+        format!(
+            "Failed to execute handler setup associated with '{:?}': {:?}",
+            handler, e
+        )
+    })?;
 
     qmp.execute(&qmp::cont {})
         .expect("Failed to begin VM execution");
