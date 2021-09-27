@@ -6,8 +6,11 @@ use qapi::{Qmp, Stream};
 
 pub mod manual;
 pub mod stdout;
+pub mod tmux;
 
 use crate::Result;
+
+const SCREEN_INVOCATION: &str = "screen -h 1000000";
 
 pub trait QemuHandler: Debug {
     fn qemu_args(&self) -> Vec<String>;
