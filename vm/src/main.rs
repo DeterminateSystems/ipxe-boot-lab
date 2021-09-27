@@ -6,17 +6,22 @@ use std::os::unix::fs::OpenOptionsExt;
 // use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use qapi::{qmp, Qmp};
 use structopt::StructOpt;
+use tmux_interface::TmuxCommand;
 
 mod meta;
 mod tty_handler;
 
 use meta::{Drive, DriveType, Metadata, NetworkInterface};
-use tty_handler::QemuHandler;
-use tty_handler::{manual::Manual, stdout::Stdout};
+use tty_handler::{
+    manual::Manual,
+    stdout::Stdout,
+    tmux::{Tmux, TARGET_SESSION_NAME},
+    QemuHandler,
+};
 
 pub(crate) type Result<T, E = Box<dyn Error + Send + Sync + 'static>> = core::result::Result<T, E>;
 
@@ -33,10 +38,16 @@ fn validate_is_file(path: String) -> Result<(), String> {
 
 #[derive(Debug, StructOpt)]
 struct Args {
+    /// The path to the metadata of the machine being emulated
     #[structopt(required = true, validator = validate_is_file)]
     meta_file: PathBuf,
-    #[structopt(long)]
+    /// Whether or not to run in non-interactive mode (will print everything to stdout and will not
+    /// accept any input)
+    #[structopt(long, conflicts_with = "manual")]
     non_interactive: bool,
+    /// Whether or not to manually set up screen sessions
+    #[structopt(long, conflicts_with = "non-interactive")]
+    manual: bool,
 }
 
 fn main() -> Result<()> {
@@ -54,14 +65,33 @@ fn main() -> Result<()> {
             monitor: String::from("mon0"),
             serials: vec![String::from("ttyS0"), String::from("ttyS1")],
         })
-    } else {
+    } else if args.manual {
         Box::new(Manual {
+            monitor: String::from("mon0"),
+            serials: vec![String::from("ttyS0"), String::from("ttyS1")],
+        })
+    } else {
+        // Fixes error where screen expects to own /tmp/screens/S-root, but cannot because it isn't
+        // root outside the namespace:
+        // "You are not the owner of /tmp/screens/S-root."
+        env::set_var(
+            "SCREENDIR",
+            temp_dir.path().join("screen").display().to_string(),
+        );
+
+        Box::new(Tmux {
             monitor: String::from("mon0"),
             serials: vec![String::from("ttyS0"), String::from("ttyS1")],
         })
     };
 
     let mut cmd = Command::new("qemu-kvm");
+    cmd.stdin(Stdio::null());
+
+    if !non_interactive {
+        cmd.stderr(Stdio::null());
+        cmd.stdout(Stdio::null());
+    }
 
     // don't start emulation immediately, to allow us time to set up
     cmd.arg("-S");
@@ -89,6 +119,13 @@ fn main() -> Result<()> {
 
     let mut child = cmd.current_dir(&temp_dir.path()).spawn()?;
 
+    // TODO: ^C handler that quits qemu so we can exit gracefully and clean up tempfiles
+    // FIXME: this causes a panic on clean exits because we clean it up before it can clean itself up
+    // maybe we can just kill the child process by its pid? `Child` has a `id()` func that will hand it to us
+    // ctrlc::set_handler(move || {
+    //     fs::remove_dir_all(&temp_path).expect("failed to clean up temp_dir");
+    // })?;
+
     while !sock_path.exists() {}
 
     let stream = UnixStream::connect(sock_path).expect("Failed to connect to QMP socket");
@@ -105,6 +142,15 @@ fn main() -> Result<()> {
 
     qmp.execute(&qmp::cont {})
         .expect("Failed to begin VM execution");
+
+    // Attaching can't be done in the handler's setup() because that function won't return until
+    // tmux exits, thus preventing the VM from being continued above.
+    if !(non_interactive || args.manual) {
+        TmuxCommand::new()
+            .attach_session()
+            .target_session(TARGET_SESSION_NAME)
+            .output()?;
+    }
 
     child.wait()?;
 

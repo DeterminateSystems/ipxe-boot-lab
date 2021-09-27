@@ -3,7 +3,7 @@ use std::os::unix::net::UnixStream;
 
 use qapi::{qmp, Qmp, Stream};
 
-use super::QemuHandler;
+use super::{QemuHandler, SCREEN_INVOCATION};
 use crate::Result;
 
 #[derive(Debug)]
@@ -32,8 +32,9 @@ impl QemuHandler for Manual {
             }
 
             println!(
-                ": {} ; screen {} 115200",
+                ": {} ; {} {} 115200",
                 dev.label,
+                SCREEN_INVOCATION,
                 dev.filename.trim_start_matches("pty:")
             );
         }
