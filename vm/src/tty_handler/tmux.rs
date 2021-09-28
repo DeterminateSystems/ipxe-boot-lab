@@ -27,6 +27,12 @@ impl QemuHandler for Tmux {
     }
 
     fn setup(&self, qmp: &mut Qmp<Stream<BufReader<&UnixStream>, &UnixStream>>) -> Result<()> {
+        // Fixes error where screen expects to own /tmp/screens/S-root, but cannot because it isn't
+        // root outside the namespace:
+        // "You are not the owner of /tmp/screens/S-root."
+        let temp_dir = tempfile::TempDir::new()?;
+        std::env::set_var("SCREENDIR", temp_dir.path());
+
         let chardevs = qmp.execute(&qmp::query_chardev {})?;
         let monitor = chardevs
             .iter()
