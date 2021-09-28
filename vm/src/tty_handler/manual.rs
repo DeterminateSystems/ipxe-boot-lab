@@ -44,4 +44,8 @@ impl QemuHandler for Manual {
 
         Ok(())
     }
+
+    fn wait(&self) -> Result<()> {
+        Ok(())
+    }
 }

@@ -71,4 +71,13 @@ impl QemuHandler for Tmux {
 
         Ok(())
     }
+
+    fn wait(&self) -> Result<()> {
+        TmuxCommand::new()
+            .attach_session()
+            .target_session(TARGET_SESSION_NAME)
+            .output()?;
+
+        Ok(())
+    }
 }

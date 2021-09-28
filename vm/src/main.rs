@@ -10,7 +10,6 @@ use std::process::{Command, Stdio};
 
 use qapi::{qmp, Qmp};
 use structopt::StructOpt;
-use tmux_interface::TmuxCommand;
 
 mod cli;
 mod meta;
@@ -18,12 +17,7 @@ mod tty_handler;
 
 use cli::{Args, Driver};
 use meta::{Drive, DriveType, Metadata, NetworkInterface};
-use tty_handler::{
-    manual::Manual,
-    stdout::Stdout,
-    tmux::{Tmux, TARGET_SESSION_NAME},
-    QemuHandler,
-};
+use tty_handler::{manual::Manual, stdout::Stdout, tmux::Tmux, QemuHandler};
 
 pub(crate) type Result<T, E = Box<dyn Error + Send + Sync + 'static>> = core::result::Result<T, E>;
 
@@ -113,14 +107,10 @@ fn main() -> Result<()> {
     qmp.execute(&qmp::cont {})
         .expect("Failed to begin VM execution");
 
-    // Attaching can't be done in the handler's setup() because that function won't return until
-    // tmux exits, thus preventing the VM from being continued above.
-    if args.driver == Driver::Tmux {
-        TmuxCommand::new()
-            .attach_session()
-            .target_session(TARGET_SESSION_NAME)
-            .output()?;
-    }
+    // The handler may want to block for an indeterminate amount of time (see the Tmux struct), so
+    // we give it a way to do so and then wait for it to stop. This happens *after* the VM starts
+    // up, so we don't block spinning up the VM.
+    handler.wait()?;
 
     child.wait()?;
 
