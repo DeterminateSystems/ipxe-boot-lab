@@ -16,6 +16,7 @@ mod cli;
 mod meta;
 mod tty_handler;
 
+use cli::{Args, Driver};
 use meta::{Drive, DriveType, Metadata, NetworkInterface};
 use tty_handler::{
     manual::Manual,
@@ -30,8 +31,8 @@ const NETWORK_UP: &str = include_str!("network-up.sh");
 const NETWORK_DOWN: &str = include_str!("network-down.sh");
 
 fn main() -> Result<()> {
-    let args = cli::Args::from_args();
-    let non_interactive = args.non_interactive || !atty::is(atty::Stream::Stdout);
+    let args = Args::from_args();
+    let non_interactive = args.driver == Driver::ReadOnly || !atty::is(atty::Stream::Stdout);
     let meta_file = fs::canonicalize(args.meta_file)?;
 
     let reader = BufReader::new(File::open(&meta_file)?);
@@ -39,21 +40,19 @@ fn main() -> Result<()> {
 
     let temp_dir = tempfile::tempdir()?;
     let sock_path = temp_dir.path().join("qmp-sock");
-    let handler: Box<dyn QemuHandler> = if non_interactive {
-        Box::new(Stdout {
+    let handler: Box<dyn QemuHandler> = match args.driver {
+        Driver::ReadOnly => Box::new(Stdout {
             monitor: String::from("mon0"),
             serials: vec![String::from("ttyS0"), String::from("ttyS1")],
-        })
-    } else if args.manual {
-        Box::new(Manual {
+        }),
+        Driver::Manual => Box::new(Manual {
             monitor: String::from("mon0"),
             serials: vec![String::from("ttyS0"), String::from("ttyS1")],
-        })
-    } else {
-        Box::new(Tmux {
+        }),
+        Driver::Tmux => Box::new(Tmux {
             monitor: String::from("mon0"),
             serials: vec![String::from("ttyS0"), String::from("ttyS1")],
-        })
+        }),
     };
 
     let mut cmd = Command::new("qemu-kvm");
@@ -116,7 +115,7 @@ fn main() -> Result<()> {
 
     // Attaching can't be done in the handler's setup() because that function won't return until
     // tmux exits, thus preventing the VM from being continued above.
-    if !(non_interactive || args.manual) {
+    if args.driver == Driver::Tmux {
         TmuxCommand::new()
             .attach_session()
             .target_session(TARGET_SESSION_NAME)
