@@ -4,12 +4,21 @@ use std::os::unix::net::UnixStream;
 use qapi::{qmp, Qmp, Stream};
 
 use super::{QemuHandler, SCREEN_INVOCATION};
-use crate::Result;
+use crate::{interface::InterfaceConfiguration, Result};
 
 #[derive(Debug)]
 pub struct Manual {
     pub monitor: String,
     pub serials: Vec<String>,
+}
+
+impl Manual {
+    pub fn new(interface: InterfaceConfiguration) -> Manual {
+        Manual {
+            monitor: interface.monitor,
+            serials: interface.serials,
+        }
+    }
 }
 
 impl QemuHandler for Manual {
