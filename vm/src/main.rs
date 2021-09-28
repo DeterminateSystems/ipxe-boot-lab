@@ -71,14 +71,6 @@ fn main() -> Result<()> {
             serials: vec![String::from("ttyS0"), String::from("ttyS1")],
         })
     } else {
-        // Fixes error where screen expects to own /tmp/screens/S-root, but cannot because it isn't
-        // root outside the namespace:
-        // "You are not the owner of /tmp/screens/S-root."
-        env::set_var(
-            "SCREENDIR",
-            temp_dir.path().join("screen").display().to_string(),
-        );
-
         Box::new(Tmux {
             monitor: String::from("mon0"),
             serials: vec![String::from("ttyS0"), String::from("ttyS1")],
