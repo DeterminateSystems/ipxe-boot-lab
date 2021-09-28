@@ -2,17 +2,33 @@ use std::io::BufReader;
 use std::os::unix::net::UnixStream;
 
 use qapi::{qmp, Qmp, Stream};
+use rand::{distributions::Alphanumeric, Rng};
 use tmux_interface::TmuxCommand;
 
 use super::{QemuHandler, SCREEN_INVOCATION};
 use crate::Result;
 
-pub(crate) const TARGET_SESSION_NAME: &str = "ipxe_boot_lab";
-
 #[derive(Debug)]
 pub struct Tmux {
     pub monitor: String,
     pub serials: Vec<String>,
+    session_name: String,
+}
+
+impl Tmux {
+    pub fn new(monitor: String, serials: Vec<String>) -> Tmux {
+        let random_suffix = rand::thread_rng()
+            .sample_iter(Alphanumeric)
+            .take(7)
+            .map(char::from)
+            .collect::<String>();
+
+        Tmux {
+            monitor,
+            serials,
+            session_name: format!("ipxe-{}", random_suffix),
+        }
+    }
 }
 
 impl QemuHandler for Tmux {
@@ -44,7 +60,7 @@ impl QemuHandler for Tmux {
         tmux.new_session()
             .detached()
             .window_name(&monitor.label)
-            .session_name(TARGET_SESSION_NAME)
+            .session_name(&self.session_name)
             .shell_command(format!(
                 "{} {} 115200",
                 SCREEN_INVOCATION,
@@ -75,7 +91,7 @@ impl QemuHandler for Tmux {
     fn wait(&self) -> Result<()> {
         TmuxCommand::new()
             .attach_session()
-            .target_session(TARGET_SESSION_NAME)
+            .target_session(&self.session_name)
             .output()?;
 
         Ok(())

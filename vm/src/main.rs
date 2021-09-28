@@ -43,10 +43,10 @@ fn main() -> Result<()> {
             monitor: String::from("mon0"),
             serials: vec![String::from("ttyS0"), String::from("ttyS1")],
         }),
-        Driver::Tmux => Box::new(Tmux {
-            monitor: String::from("mon0"),
-            serials: vec![String::from("ttyS0"), String::from("ttyS1")],
-        }),
+        Driver::Tmux => Box::new(Tmux::new(
+            String::from("mon0"),
+            vec![String::from("ttyS0"), String::from("ttyS1")],
+        )),
     };
 
     let mut cmd = Command::new("qemu-kvm");
