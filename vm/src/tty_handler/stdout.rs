@@ -32,4 +32,8 @@ impl QemuHandler for Stdout {
     fn setup(&self, _qmp: &mut Qmp<Stream<BufReader<&UnixStream>, &UnixStream>>) -> Result<()> {
         Ok(())
     }
+
+    fn wait(&self) -> Result<()> {
+        Ok(())
+    }
 }

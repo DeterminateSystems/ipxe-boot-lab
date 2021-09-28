@@ -16,4 +16,6 @@ pub trait QemuHandler: Debug {
     fn qemu_args(&self) -> Vec<String>;
 
     fn setup(&self, qmp: &mut Qmp<Stream<BufReader<&UnixStream>, &UnixStream>>) -> Result<()>;
+
+    fn wait(&self) -> Result<()>;
 }
