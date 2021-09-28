@@ -5,13 +5,14 @@ use std::io::{BufReader, Write};
 use std::os::unix::fs::OpenOptionsExt;
 // use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::UnixStream;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Command, Stdio};
 
 use qapi::{qmp, Qmp};
 use structopt::StructOpt;
 use tmux_interface::TmuxCommand;
 
+mod cli;
 mod meta;
 mod tty_handler;
 
@@ -28,30 +29,8 @@ pub(crate) type Result<T, E = Box<dyn Error + Send + Sync + 'static>> = core::re
 const NETWORK_UP: &str = include_str!("network-up.sh");
 const NETWORK_DOWN: &str = include_str!("network-down.sh");
 
-fn validate_is_file(path: String) -> Result<(), String> {
-    if Path::new(&path).is_file() {
-        return Ok(());
-    }
-
-    Err(format!("'{}' was not a file", path))
-}
-
-#[derive(Debug, StructOpt)]
-struct Args {
-    /// The path to the metadata of the machine being emulated
-    #[structopt(required = true, validator = validate_is_file)]
-    meta_file: PathBuf,
-    /// Whether or not to run in non-interactive mode (will print everything to stdout and will not
-    /// accept any input)
-    #[structopt(long, conflicts_with = "manual")]
-    non_interactive: bool,
-    /// Whether or not to manually set up screen sessions
-    #[structopt(long, conflicts_with = "non-interactive")]
-    manual: bool,
-}
-
 fn main() -> Result<()> {
-    let args = Args::from_args();
+    let args = cli::Args::from_args();
     let non_interactive = args.non_interactive || !atty::is(atty::Stream::Stdout);
     let meta_file = fs::canonicalize(args.meta_file)?;
 
