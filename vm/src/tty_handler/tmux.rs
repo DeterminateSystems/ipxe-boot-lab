@@ -6,7 +6,7 @@ use rand::{distributions::Alphanumeric, Rng};
 use tmux_interface::TmuxCommand;
 
 use super::{QemuHandler, SCREEN_INVOCATION};
-use crate::Result;
+use crate::{interface::InterfaceConfiguration, Result};
 
 #[derive(Debug)]
 pub struct Tmux {
@@ -16,7 +16,7 @@ pub struct Tmux {
 }
 
 impl Tmux {
-    pub fn new(monitor: String, serials: Vec<String>) -> Tmux {
+    pub fn new(interface: InterfaceConfiguration) -> Tmux {
         let random_suffix = rand::thread_rng()
             .sample_iter(Alphanumeric)
             .take(7)
@@ -24,8 +24,8 @@ impl Tmux {
             .collect::<String>();
 
         Tmux {
-            monitor,
-            serials,
+            monitor: interface.monitor,
+            serials: interface.serials,
             session_name: format!("ipxe-{}", random_suffix),
         }
     }

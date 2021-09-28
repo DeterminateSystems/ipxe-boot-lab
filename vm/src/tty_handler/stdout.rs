@@ -4,12 +4,21 @@ use std::os::unix::net::UnixStream;
 use qapi::{Qmp, Stream};
 
 use super::QemuHandler;
-use crate::Result;
+use crate::{interface::InterfaceConfiguration, Result};
 
 #[derive(Debug)]
 pub struct Stdout {
     pub monitor: String,
     pub serials: Vec<String>,
+}
+
+impl Stdout {
+    pub fn new(interface: InterfaceConfiguration) -> Stdout {
+        Stdout {
+            monitor: interface.monitor,
+            serials: interface.serials,
+        }
+    }
 }
 
 impl QemuHandler for Stdout {

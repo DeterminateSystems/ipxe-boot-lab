@@ -12,10 +12,12 @@ use qapi::{qmp, Qmp};
 use structopt::StructOpt;
 
 mod cli;
+mod interface;
 mod meta;
 mod tty_handler;
 
 use cli::{Args, Driver};
+use interface::InterfaceConfiguration;
 use meta::{Drive, DriveType, Metadata, NetworkInterface};
 use tty_handler::{manual::Manual, stdout::Stdout, tmux::Tmux, QemuHandler};
 
@@ -34,19 +36,14 @@ fn main() -> Result<()> {
 
     let temp_dir = tempfile::tempdir()?;
     let sock_path = temp_dir.path().join("qmp-sock");
+    let interface = InterfaceConfiguration {
+        monitor: String::from("mon0"),
+        serials: vec![String::from("ttyS0"), String::from("ttyS1")],
+    };
     let handler: Box<dyn QemuHandler> = match args.driver {
-        Driver::ReadOnly => Box::new(Stdout {
-            monitor: String::from("mon0"),
-            serials: vec![String::from("ttyS0"), String::from("ttyS1")],
-        }),
-        Driver::Manual => Box::new(Manual {
-            monitor: String::from("mon0"),
-            serials: vec![String::from("ttyS0"), String::from("ttyS1")],
-        }),
-        Driver::Tmux => Box::new(Tmux::new(
-            String::from("mon0"),
-            vec![String::from("ttyS0"), String::from("ttyS1")],
-        )),
+        Driver::ReadOnly => Box::new(Stdout::new(interface)),
+        Driver::Manual => Box::new(Manual::new(interface)),
+        Driver::Tmux => Box::new(Tmux::new(interface)),
     };
 
     let mut cmd = Command::new("qemu-kvm");
