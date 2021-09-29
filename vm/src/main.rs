@@ -41,6 +41,7 @@ fn main() -> Result<()> {
         serials: vec![String::from("ttyS0"), String::from("ttyS1")],
     };
     let handler: Box<dyn QemuHandler> = match args.driver {
+        _ if non_interactive => Box::new(Stdout::new(interface)),
         Driver::ReadOnly => Box::new(Stdout::new(interface)),
         Driver::Manual => Box::new(Manual::new(interface)),
         Driver::Tmux => Box::new(Tmux::new(interface)),
@@ -77,13 +78,6 @@ fn main() -> Result<()> {
     cmd.args(self::uefi(meta.specs.features.uefi, &temp_dir)?);
 
     let mut child = cmd.current_dir(&temp_dir.path()).spawn()?;
-
-    // TODO: ^C handler that quits qemu so we can exit gracefully and clean up tempfiles
-    // FIXME: this causes a panic on clean exits because we clean it up before it can clean itself up
-    // maybe we can just kill the child process by its pid? `Child` has a `id()` func that will hand it to us
-    // ctrlc::set_handler(move || {
-    //     fs::remove_dir_all(&temp_path).expect("failed to clean up temp_dir");
-    // })?;
 
     while !sock_path.exists() {}
 
