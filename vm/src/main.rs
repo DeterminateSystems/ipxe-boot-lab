@@ -47,12 +47,10 @@ fn main() -> Result<()> {
     };
 
     let mut cmd = Command::new("qemu-kvm");
-    cmd.stdin(Stdio::null());
 
-    if !non_interactive {
-        cmd.stderr(Stdio::null());
-        cmd.stdout(Stdio::null());
-    }
+    cmd.stdin(Stdio::null());
+    cmd.stderr(handler.stderr_destination());
+    cmd.stdout(handler.stdout_destination());
 
     // don't start emulation immediately, to allow us time to set up
     cmd.arg("-S");

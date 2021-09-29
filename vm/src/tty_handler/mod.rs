@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::io::BufReader;
 use std::os::unix::net::UnixStream;
+use std::process::Stdio;
 
 use qapi::{Qmp, Stream};
 
@@ -18,4 +19,7 @@ pub trait QemuHandler: Debug {
     fn setup(&self, qmp: &mut Qmp<Stream<BufReader<&UnixStream>, &UnixStream>>) -> Result<()>;
 
     fn wait(&self) -> Result<()>;
+
+    fn stderr_destination(&self) -> Stdio;
+    fn stdout_destination(&self) -> Stdio;
 }

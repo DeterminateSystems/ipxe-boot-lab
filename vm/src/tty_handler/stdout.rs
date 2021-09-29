@@ -1,5 +1,6 @@
 use std::io::BufReader;
 use std::os::unix::net::UnixStream;
+use std::process::Stdio;
 
 use qapi::{Qmp, Stream};
 
@@ -44,5 +45,13 @@ impl QemuHandler for Stdout {
 
     fn wait(&self) -> Result<()> {
         Ok(())
+    }
+
+    fn stderr_destination(&self) -> Stdio {
+        Stdio::inherit()
+    }
+
+    fn stdout_destination(&self) -> Stdio {
+        Stdio::inherit()
     }
 }

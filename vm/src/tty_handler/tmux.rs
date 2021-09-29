@@ -1,5 +1,6 @@
 use std::io::BufReader;
 use std::os::unix::net::UnixStream;
+use std::process::Stdio;
 
 use qapi::{qmp, Qmp, Stream};
 use rand::{distributions::Alphanumeric, Rng};
@@ -95,5 +96,13 @@ impl QemuHandler for Tmux {
             .output()?;
 
         Ok(())
+    }
+
+    fn stderr_destination(&self) -> Stdio {
+        Stdio::null()
+    }
+
+    fn stdout_destination(&self) -> Stdio {
+        Stdio::null()
     }
 }
