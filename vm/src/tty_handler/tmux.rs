@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::io::BufReader;
 use std::os::unix::net::UnixStream;
 use std::process::Stdio;
@@ -8,6 +9,17 @@ use tmux_interface::TmuxCommand;
 
 use super::{QemuHandler, SCREEN_INVOCATION};
 use crate::{interface::InterfaceConfiguration, Result};
+
+struct PinnedTmuxCommand;
+
+impl PinnedTmuxCommand {
+    fn new() -> TmuxCommand<'static> {
+        let mut tmux = TmuxCommand::new();
+        tmux.bin = Cow::Borrowed(env!("TMUX_BIN"));
+
+        tmux
+    }
+}
 
 #[derive(Debug)]
 pub struct Tmux {
@@ -56,7 +68,7 @@ impl QemuHandler for Tmux {
             .find(|dev| dev.label == self.monitor)
             .ok_or_else(|| "Couldn't find mon0 chardev")?;
 
-        let tmux = TmuxCommand::new();
+        let tmux = PinnedTmuxCommand::new();
 
         tmux.new_session()
             .detached()
@@ -90,7 +102,7 @@ impl QemuHandler for Tmux {
     }
 
     fn wait(&self) -> Result<()> {
-        TmuxCommand::new()
+        PinnedTmuxCommand::new()
             .attach_session()
             .target_session(&self.session_name)
             .output()?;

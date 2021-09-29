@@ -21,4 +21,6 @@ pkgs.mkShell {
   ];
 
   OVMF_PATH = pkgs.OVMF.fd;
+  TMUX_PATH = "${pkgs.tmux}/bin/tmux";
+  SCREEN_PATH = "${pkgs.screen}/bin/screen";
 }
