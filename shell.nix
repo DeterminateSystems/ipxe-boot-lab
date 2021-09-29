@@ -1,18 +1,23 @@
-let pkgs = import <nixpkgs> { }; in
+let
+  sources = import ./nix/sources.nix;
+  pkgs = import sources.nixpkgs { };
+in
 pkgs.mkShell {
   buildInputs = [
     pkgs.binwalk
-    pkgs.cargo
     pkgs.entr
     pkgs.file
     pkgs.foreman
     pkgs.nftables
     pkgs.qemu
-    pkgs.rustfmt
     pkgs.slirp4netns
     pkgs.vim # xxd
     pkgs.ncurses # tput
     pkgs.jq
+
+    pkgs.cargo
+    pkgs.rustfmt
+    pkgs.rustc
   ];
 
   OVMF_PATH = pkgs.OVMF.fd;

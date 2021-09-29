@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: cachix/install-nix-action@v12
+    - name: Check rustfmt
+      working-directory: vm/
+      run: nix-shell ../shell.nix --run 'cargo fmt -- --check'
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: cachix/install-nix-action@v12
+    - name: Build
+      working-directory: vm/
+      run: nix-shell ../shell.nix --run 'cargo build'
