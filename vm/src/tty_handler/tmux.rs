@@ -66,7 +66,7 @@ impl QemuHandler for Tmux {
         let monitor = chardevs
             .iter()
             .find(|dev| dev.label == self.monitor)
-            .ok_or_else(|| "Couldn't find mon0 chardev")?;
+            .ok_or("Couldn't find mon0 chardev")?;
 
         let tmux = PinnedTmuxCommand::new();
 
