@@ -14,6 +14,9 @@ pkgs.mkShell {
     pkgs.vim # xxd
     pkgs.ncurses # tput
     pkgs.jq
+    pkgs.procps # pgrep
+    pkgs.util-linux # nsenter
+    pkgs.iproute # ip
 
     pkgs.cargo
     pkgs.rustfmt
