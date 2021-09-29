@@ -12,6 +12,7 @@ use qapi::{qmp, Qmp};
 use structopt::StructOpt;
 
 mod cli;
+mod dhcp;
 mod interface;
 mod meta;
 mod tty_handler;
@@ -26,7 +27,184 @@ pub(crate) type Result<T, E = Box<dyn Error + Send + Sync + 'static>> = core::re
 const NETWORK_UP: &str = include_str!("network-up.sh");
 const NETWORK_DOWN: &str = include_str!("network-down.sh");
 
+use std::os::unix::process::CommandExt;
+use unshare::{GidMap, Namespace, UidMap};
+
+fn enter_namespace() -> () {
+    /*
+            unshare \
+            --fork \
+            x--pid \
+            x--mount \
+            x--net \
+            x--user \
+            x--map-root-user \
+            --map-group=0 \
+            --setuid 0 \
+            --mount-proc \
+            --kill-child \
+            -- \
+            true
+
+            produced:
+
+        mmap(NULL, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7faf57fd6000
+        arch_prctl(ARCH_SET_FS, 0x7faf57fd6740) = 0
+
+        unshare(CLONE_NEWNS|CLONE_NEWUSER|CLONE_NEWPID|CLONE_NEWNET) = 0
+        clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLDstrace: Process 733947 attached
+        , child_tidptr=0x7faf57fd6a10) = 733947
+        [pid 733947] openat(AT_FDCWD, "/proc/self/uid_map", O_WRONLY) = 3
+        [pid 733947] write(3, "0 1000 1", 8)    = 8
+        [pid 733947] openat(AT_FDCWD, "/proc/self/setgroups", O_WRONLY) = 3
+        [pid 733947] write(3, "deny", 4)        = 4
+        [pid 733947] openat(AT_FDCWD, "/proc/self/gid_map", O_WRONLY) = 3
+        [pid 733947] write(3, "0 100 1", 7)     = 7
+        [pid 733947] mount("none", "/", NULL, MS_REC|MS_PRIVATE, NULL) = 0
+        [pid 733947] mount("none", "/proc", NULL, MS_REC|MS_PRIVATE, NULL) = 0
+        [pid 733947] mount("proc", "/proc", "proc", MS_NOSUID|MS_NODEV|MS_NOEXEC, NULL) = 0
+
+        mount("none", "/", NULL, MS_REC|MS_PRIVATE, NULL) = 0
+    mount("none", "/proc", NULL, MS_REC|MS_PRIVATE, NULL) = 0
+    mount("proc", "/proc", "proc", MS_NOSUID|MS_NODEV|MS_NOEXEC, NULL) = -1 EPERM (Operation not permitted)
+
+            */
+
+    nix::sched::unshare(
+        nix::sched::CloneFlags::CLONE_NEWNS
+            | nix::sched::CloneFlags::CLONE_NEWUSER
+            | nix::sched::CloneFlags::CLONE_NEWPID
+            | nix::sched::CloneFlags::CLONE_NEWNET,
+    )
+    .expect("Failed to make a new user namespace.");
+}
+
+fn setup_user(euid: nix::unistd::Uid, egid: nix::unistd::Gid) -> () {
+    File::create("/proc/self/uid_map")
+        .expect("Failed to open the uid map")
+        .write_all(format!("0 {} 1", euid.as_raw()).as_bytes())
+        .expect("Failed to write the uid map");
+    File::create("/proc/self/setgroups")
+        .expect("Failed to open the setgroups file")
+        .write_all(b"deny")
+        .expect("Failed to write the setgroups file");
+    File::create("/proc/self/gid_map")
+        .expect("Failed to open the gid map")
+        .write_all(format!("0 {} 1", egid.as_raw()).as_bytes())
+        .expect("Failed to write the gid map");
+
+    nix::unistd::setuid(nix::unistd::Uid::from_raw(0)).expect("Failed to setuid 0");
+}
+
+fn setup_mounts() -> () {
+    nix::mount::mount::<str, str, str, str>(
+        Some("none"),
+        "/",
+        None,
+        nix::mount::MsFlags::MS_REC | nix::mount::MsFlags::MS_PRIVATE,
+        None,
+    )
+    .expect("Failed to mount 'none' to / as recursive and private");
+    nix::mount::mount::<str, str, str, str>(
+        Some("none"),
+        "/proc",
+        None,
+        nix::mount::MsFlags::MS_REC | nix::mount::MsFlags::MS_PRIVATE,
+        None,
+    )
+    .expect("Failed to mount 'none' to /proc as recursive and private");
+
+    nix::mount::mount::<str, str, str, str>(
+        Some("proc"),
+        "/proc",
+        Some("proc"),
+        nix::mount::MsFlags::MS_NOSUID
+            | nix::mount::MsFlags::MS_NODEV
+            | nix::mount::MsFlags::MS_NOEXEC,
+        None,
+    )
+    .expect("Failed to remount /proc as a procfs");
+}
+
+fn setup_network() {
+    println!(
+        "ip link set lo up: {:?}",
+        std::process::Command::new("ip")
+            .args(&["link", "set", "lo", "up"])
+            .status()
+    );
+
+    println!(
+        "ip link add br0 type bridge: {:?}",
+        std::process::Command::new("ip")
+            .args(&["link", "add", "br0", "type", "bridge"])
+            .status()
+    );
+
+    println!(
+        "ip link set br0 up: {:?}",
+        std::process::Command::new("ip")
+            .args(&["link", "set", "br0", "up"])
+            .status()
+    );
+
+    println!(
+        "ip addr add 10.0.2.1/24 dev br0: {:?}",
+        std::process::Command::new("ip")
+            .args(&["addr", "add", "10.0.2.1/24", "dev", "br0"])
+            .status()
+    );
+}
+
+fn start_dhcp() -> std::thread::JoinHandle<()> {
+    std::thread::spawn(|| {
+        crate::dhcp::main();
+    })
+}
+
 fn main() -> Result<()> {
+    let euid = nix::unistd::geteuid();
+    let egid = nix::unistd::getegid();
+
+    enter_namespace();
+
+    let mut stack = [0u8; 4096];
+    let pid = nix::sched::clone(
+        Box::new(|| -> isize {
+            setup_user(euid, egid);
+            setup_mounts();
+            setup_network();
+
+            let dhcp = start_dhcp();
+
+            println!(
+                "{:?}",
+                std::process::Command::new(
+                    "/nix/store/jj6z78skpdcya84iqbn9cf59sxjy5msv-coreutils-8.32/bin/whoami"
+                )
+                //.uid(0)
+                //.gid(0)
+                .status()
+            );
+
+            vm_stuff();
+            dhcp.join().expect("hi dhcp");
+            0
+        }),
+        &mut stack[..],
+        nix::sched::CloneFlags::empty(),
+        None,
+    )
+    .expect("what the heck");
+
+    nix::sys::wait::waitpid(pid, Some(nix::sys::wait::WaitPidFlag::WEXITED)).expect(":)");
+
+    println!("goodbye, sweet prince");
+
+    Ok(())
+}
+
+fn vm_stuff() -> Result<()> {
     let args = Args::from_args();
     let non_interactive = args.driver == Driver::ReadOnly || !atty::is(atty::Stream::Stdout);
     let meta_file = fs::canonicalize(args.meta_file)?;
