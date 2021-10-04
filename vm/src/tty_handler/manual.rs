@@ -1,15 +1,25 @@
 use std::io::BufReader;
 use std::os::unix::net::UnixStream;
+use std::process::Stdio;
 
 use qapi::{qmp, Qmp, Stream};
 
-use super::QemuHandler;
-use crate::Result;
+use super::{QemuHandler, SCREEN_INVOCATION};
+use crate::{interface::InterfaceConfiguration, Result};
 
 #[derive(Debug)]
 pub struct Manual {
     pub monitor: String,
     pub serials: Vec<String>,
+}
+
+impl Manual {
+    pub fn new(interface: InterfaceConfiguration) -> Manual {
+        Manual {
+            monitor: interface.monitor,
+            serials: interface.serials,
+        }
+    }
 }
 
 impl QemuHandler for Manual {
@@ -32,8 +42,9 @@ impl QemuHandler for Manual {
             }
 
             println!(
-                ": {} ; screen {} 115200",
+                ": {} ; {} {} 115200",
                 dev.label,
+                SCREEN_INVOCATION,
                 dev.filename.trim_start_matches("pty:")
             );
         }
@@ -42,5 +53,17 @@ impl QemuHandler for Manual {
         std::thread::sleep_ms(5000);
 
         Ok(())
+    }
+
+    fn wait(&self) -> Result<()> {
+        Ok(())
+    }
+
+    fn stderr_destination(&self) -> Stdio {
+        Stdio::null()
+    }
+
+    fn stdout_destination(&self) -> Stdio {
+        Stdio::null()
     }
 }

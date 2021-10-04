@@ -5,43 +5,30 @@ use std::io::{BufReader, Write};
 use std::os::unix::fs::OpenOptionsExt;
 // use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::UnixStream;
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::path::Path;
+use std::process::{Command, Stdio};
 
 use qapi::{qmp, Qmp};
 use structopt::StructOpt;
 
+mod cli;
+mod interface;
 mod meta;
 mod tty_handler;
 
+use cli::{Args, Driver};
+use interface::InterfaceConfiguration;
 use meta::{Drive, DriveType, Metadata, NetworkInterface};
-use tty_handler::QemuHandler;
-use tty_handler::{manual::Manual, stdout::Stdout};
+use tty_handler::{manual::Manual, stdout::Stdout, tmux::Tmux, QemuHandler};
 
 pub(crate) type Result<T, E = Box<dyn Error + Send + Sync + 'static>> = core::result::Result<T, E>;
 
 const NETWORK_UP: &str = include_str!("network-up.sh");
 const NETWORK_DOWN: &str = include_str!("network-down.sh");
 
-fn validate_is_file(path: String) -> Result<(), String> {
-    if Path::new(&path).is_file() {
-        return Ok(());
-    }
-
-    Err(format!("'{}' was not a file", path))
-}
-
-#[derive(Debug, StructOpt)]
-struct Args {
-    #[structopt(required = true, validator = validate_is_file)]
-    meta_file: PathBuf,
-    #[structopt(long)]
-    non_interactive: bool,
-}
-
 fn main() -> Result<()> {
     let args = Args::from_args();
-    let non_interactive = args.non_interactive || !atty::is(atty::Stream::Stdout);
+    let non_interactive = args.driver == Driver::ReadOnly || !atty::is(atty::Stream::Stdout);
     let meta_file = fs::canonicalize(args.meta_file)?;
 
     let reader = BufReader::new(File::open(&meta_file)?);
@@ -49,19 +36,22 @@ fn main() -> Result<()> {
 
     let temp_dir = tempfile::tempdir()?;
     let sock_path = temp_dir.path().join("qmp-sock");
-    let handler: Box<dyn QemuHandler> = if non_interactive {
-        Box::new(Stdout {
-            monitor: String::from("mon0"),
-            serials: vec![String::from("ttyS0"), String::from("ttyS1")],
-        })
-    } else {
-        Box::new(Manual {
-            monitor: String::from("mon0"),
-            serials: vec![String::from("ttyS0"), String::from("ttyS1")],
-        })
+    let interface = InterfaceConfiguration {
+        monitor: String::from("mon0"),
+        serials: vec![String::from("ttyS0"), String::from("ttyS1")],
+    };
+    let handler: Box<dyn QemuHandler> = match args.driver {
+        _ if non_interactive => Box::new(Stdout::new(interface)),
+        Driver::ReadOnly => Box::new(Stdout::new(interface)),
+        Driver::Manual => Box::new(Manual::new(interface)),
+        Driver::Tmux => Box::new(Tmux::new(interface)),
     };
 
     let mut cmd = Command::new("qemu-kvm");
+
+    cmd.stdin(Stdio::null());
+    cmd.stderr(handler.stderr_destination());
+    cmd.stdout(handler.stdout_destination());
 
     // don't start emulation immediately, to allow us time to set up
     cmd.arg("-S");
@@ -105,6 +95,11 @@ fn main() -> Result<()> {
 
     qmp.execute(&qmp::cont {})
         .expect("Failed to begin VM execution");
+
+    // The handler may want to block for an indeterminate amount of time (see the Tmux struct), so
+    // we give it a way to do so and then wait for it to stop. This happens *after* the VM starts
+    // up, so we don't block spinning up the VM.
+    handler.wait()?;
 
     child.wait()?;
 
