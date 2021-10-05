@@ -21,7 +21,7 @@ Then, open another terminal and run:
 $ nix-shell
 nix-shell$ ./enter.sh
 nix-shell$ cd vm
-nix-shell$ cargo run -- /path/to//nixos-install-equinix-metal/metadata-examples/c3.medium.x86.json
+nix-shell$ cargo run -- ../nixos-install-equinix-metal/metadata-examples/c3.medium.x86.json
 ```
 
 > **NOTE**: At this moment, UEFI-enabled systems do not boot properly.
