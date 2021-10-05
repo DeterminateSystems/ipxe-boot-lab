@@ -2,6 +2,9 @@
 
 ## Usage
 
+> **NOTE**: This project assumes [nix-netboot-serve] is checked out to
+> ../nix-netboot-serve and probably other stuff too
+
 Using the provided `shell.nix`, open up one terminal and run:
 
 ```console
