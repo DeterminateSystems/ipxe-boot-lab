@@ -34,5 +34,4 @@ exit, you have two options:
 1. Issue the `poweroff` command from the VM's interactive console
 1. Issue the `q` or `quit` command to QEMU's monitor
 
-> **NOTE**: Assumes nix-netboot-serve is checked out to ../nix-netboot-serve and
-> probably other stuff too
+[nix-netboot-serve]: https://github.com/DeterminateSystems/nix-netboot-serve
