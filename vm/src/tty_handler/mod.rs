@@ -11,7 +11,7 @@ pub mod tmux;
 
 use crate::Result;
 
-const SCREEN_INVOCATION: &str = concat!(env!("SCREEN_PATH"), " -h 1000000");
+const SCREEN_INVOCATION: &str = concat!(env!("SCREEN_BIN"), " -h 1000000");
 
 pub trait QemuHandler: Debug {
     fn qemu_args(&self) -> Vec<String>;
