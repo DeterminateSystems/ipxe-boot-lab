@@ -47,6 +47,33 @@ fn main() -> Result<()> {
         Driver::Tmux => Box::new(Tmux::new(interface)),
     };
 
+    println!(
+        "Destroying bond0: {:?}",
+        Command::new("ip").args(&["link", "del", "bond0"]).status()
+    );
+
+    println!(
+        "Creating bond0: {:?}",
+        Command::new("ip")
+            .args(&["link", "add", "dev", "bond0"])
+            .args(&["type", "bond"])
+            .args(&["mode", "802.3ad"])
+            .args(&["xmit_hash_policy", "layer3+4"])
+            .args(&["lacp_rate", "fast"])
+            .args(&["downdelay", "200"])
+            .args(&["miimon", "100"])
+            .args(&["updelay", "200"])
+            .status()
+    );
+
+    println!(
+        "Making bond0 part of br0: {:?}",
+        Command::new("ip")
+            .args(&["link", "set", "dev", "bond0"])
+            .args(&["master", "br0"])
+            .status()
+    );
+
     let mut cmd = Command::new("qemu-kvm");
 
     cmd.stdin(Stdio::null());
@@ -102,6 +129,11 @@ fn main() -> Result<()> {
     handler.wait()?;
 
     child.wait()?;
+
+    println!(
+        "Destroying bond0: {:?}",
+        Command::new("ip").args(&["link", "del", "bond0"]).status()
+    );
 
     Ok(())
 }
