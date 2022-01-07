@@ -15,6 +15,7 @@ struct PinnedTmuxCommand;
 impl PinnedTmuxCommand {
     fn new() -> TmuxCommand<'static> {
         let mut tmux = TmuxCommand::new();
+        tmux.socket_name("ipxe-boot-lab");
         tmux.bin = Cow::Borrowed(env!("TMUX_BIN"));
 
         tmux

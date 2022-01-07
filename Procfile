@@ -7,4 +7,4 @@ namespace-networking-setup: ./enter.sh ./network-setup-slirp.sh
 
 # Start the tmux daemon manually, otherwise
 # tmux may not start up properly.
-tmux-daemon: ./enter.sh $TMUX_PATH -D
+tmux-daemon: ./enter.sh $TMUX_PATH -D -L ipxe-boot-lab
