@@ -189,7 +189,10 @@ fn interfaces(
         ]);
         args.extend([
             "-device".to_string(),
-            format!("virtio-net-pci,netdev={},mac={}", netdev, mac),
+            format!(
+                "virtio-net-pci,netdev={},mac={},speed=10000,duplex=full",
+                netdev, mac
+            ),
         ]);
     }
 
