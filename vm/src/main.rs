@@ -47,6 +47,37 @@ fn main() -> Result<()> {
         Driver::Tmux => Box::new(Tmux::new(interface)),
     };
 
+    // Store the Result just to ignore it: bond0 may not exist,
+    // failing to delete it is not too surprising.
+    let _ = script(
+        "Destroying bond0",
+        Command::new("ip").args(&["link", "del", "bond0"]),
+    );
+
+    script(
+        "Creating bond0:",
+        Command::new("ip")
+            .args(&["link", "add", "dev", "bond0"])
+            .args(&["type", "bond"])
+            .args(&["mode", "802.3ad"])
+            .args(&["xmit_hash_policy", "layer3+4"])
+            .args(&["lacp_rate", "fast"])
+            .args(&["downdelay", "200"])
+            .args(&["miimon", "100"])
+            .args(&["updelay", "200"]),
+    )?;
+    script(
+        "Creating bond0:",
+        Command::new("sh").args(&["-c", "exit 1"]),
+    )?;
+
+    script(
+        "Making bond0 part of br0",
+        Command::new("ip")
+            .args(&["link", "set", "dev", "bond0"])
+            .args(&["master", "br0"]),
+    )?;
+
     let mut cmd = Command::new("qemu-kvm");
 
     cmd.stdin(Stdio::null());
@@ -103,6 +134,11 @@ fn main() -> Result<()> {
 
     child.wait()?;
 
+    script(
+        "Destroying bond0: {:?}",
+        Command::new("ip").args(&["link", "del", "bond0"]),
+    )?;
+
     Ok(())
 }
 
@@ -155,9 +191,19 @@ fn interfaces(
                 network_down.display()
             ),
         ]);
+
         args.extend([
             "-device".to_string(),
-            format!("virtio-net-pci,netdev={},mac={}", netdev, mac),
+            format!(
+                // The device string must have a specified speed for LACP / bonding to work.
+                // The tools around LACP will not agree to bond unless it knows the link speed.
+                // The actual number doesn't matter: there is no actual link speed, since virtualized
+                // NICs are just a shared memory buffer.
+                //
+                // See: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1581132
+                "virtio-net-pci,netdev={},mac={},speed=10000,duplex=full",
+                netdev, mac
+            ),
         ]);
     }
 
@@ -182,9 +228,10 @@ fn drives(drives: Vec<Drive>, temp_dir: &tempfile::TempDir) -> Result<Vec<String
             let ident = format!("{}{}", category, ctr);
             let dev_ident = format!("dev{}", ident);
 
-            Command::new("qemu-img")
-                .args(["create", "-f", "qcow2", &outfile, size])
-                .status()?;
+            script(
+                &format!("Creating qemu-img disk device {} ({})", dev_ident, outfile),
+                Command::new("qemu-img").args(["create", "-f", "qcow2", &outfile, size]),
+            )?;
 
             args.extend([
                 "-drive".to_string(),
@@ -251,4 +298,19 @@ fn uefi(uefi: bool, temp_dir: &tempfile::TempDir) -> Result<Vec<String>> {
     }
 
     Ok(args)
+}
+
+fn script(msg: &str, cmd: &mut Command) -> Result<()> {
+    println!("Executing step: {} ({:?})", msg, cmd);
+
+    let status = cmd.stdin(Stdio::null()).status()?;
+    if status.success() {
+        println!("...ok");
+        return Ok(());
+    }
+
+    Err(Box::new(std::io::Error::new(
+        std::io::ErrorKind::Other,
+        format!("...failed with code {:?}", status.code()),
+    )))
 }
