@@ -1,6 +1,7 @@
 use std::io::BufReader;
 use std::os::unix::net::UnixStream;
 use std::process::Stdio;
+use std::time::Duration;
 
 use qapi::{qmp, Qmp, Stream};
 
@@ -50,7 +51,7 @@ impl QemuHandler for Manual {
         }
 
         // give you time to run screen
-        std::thread::sleep_ms(5000);
+        std::thread::sleep(Duration::from_millis(5000));
 
         Ok(())
     }
