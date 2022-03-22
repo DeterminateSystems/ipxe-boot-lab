@@ -188,17 +188,16 @@ fn interfaces(
             ),
         ]);
 
-        // The device string must have a specified speed for LACP / bonding to work.
-        // The tools around LACP will not agree to bond unless it knows the link speed.
-        // The actual number doesn't matter: there is no actual link speed, since virtualized
-        // NICs are just a shared memory buffer.
-        //
-        // See: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1581132
-        let devicestring = "virtio-net-pci,netdev={},mac={},speed=10000,duplex=full";
         args.extend([
             "-device".to_string(),
             format!(
-                devicestring,
+                // The device string must have a specified speed for LACP / bonding to work.
+                // The tools around LACP will not agree to bond unless it knows the link speed.
+                // The actual number doesn't matter: there is no actual link speed, since virtualized
+                // NICs are just a shared memory buffer.
+                //
+                // See: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1581132
+                "virtio-net-pci,netdev={},mac={},speed=10000,duplex=full",
                 netdev, mac
             ),
         ]);
