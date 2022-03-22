@@ -47,13 +47,15 @@ fn main() -> Result<()> {
         Driver::Tmux => Box::new(Tmux::new(interface)),
     };
 
-    println!(
-        "Destroying bond0: {:?}",
-        Command::new("ip").args(&["link", "del", "bond0"]).status()
+    // Store the Result just to ignore it: bond0 may not exist,
+    // failing to delete it is not too surprising.
+    let _ = script(
+        "Destroying bond0",
+        Command::new("ip").args(&["link", "del", "bond0"]),
     );
 
-    println!(
-        "Creating bond0: {:?}",
+    script(
+        "Creating bond0:",
         Command::new("ip")
             .args(&["link", "add", "dev", "bond0"])
             .args(&["type", "bond"])
@@ -62,17 +64,19 @@ fn main() -> Result<()> {
             .args(&["lacp_rate", "fast"])
             .args(&["downdelay", "200"])
             .args(&["miimon", "100"])
-            .args(&["updelay", "200"])
-            .status()
-    );
+            .args(&["updelay", "200"]),
+    )?;
+    script(
+        "Creating bond0:",
+        Command::new("sh").args(&["-c", "exit 1"]),
+    )?;
 
-    println!(
-        "Making bond0 part of br0: {:?}",
+    script(
+        "Making bond0 part of br0",
         Command::new("ip")
             .args(&["link", "set", "dev", "bond0"])
-            .args(&["master", "br0"])
-            .status()
-    );
+            .args(&["master", "br0"]),
+    )?;
 
     let mut cmd = Command::new("qemu-kvm");
 
@@ -130,10 +134,10 @@ fn main() -> Result<()> {
 
     child.wait()?;
 
-    println!(
+    script(
         "Destroying bond0: {:?}",
-        Command::new("ip").args(&["link", "del", "bond0"]).status()
-    );
+        Command::new("ip").args(&["link", "del", "bond0"]),
+    )?;
 
     Ok(())
 }
@@ -224,9 +228,10 @@ fn drives(drives: Vec<Drive>, temp_dir: &tempfile::TempDir) -> Result<Vec<String
             let ident = format!("{}{}", category, ctr);
             let dev_ident = format!("dev{}", ident);
 
-            Command::new("qemu-img")
-                .args(["create", "-f", "qcow2", &outfile, size])
-                .status()?;
+            script(
+                &format!("Creating qemu-img disk device {} ({})", dev_ident, outfile),
+                Command::new("qemu-img").args(["create", "-f", "qcow2", &outfile, size]),
+            )?;
 
             args.extend([
                 "-drive".to_string(),
@@ -293,4 +298,19 @@ fn uefi(uefi: bool, temp_dir: &tempfile::TempDir) -> Result<Vec<String>> {
     }
 
     Ok(args)
+}
+
+fn script(msg: &str, cmd: &mut Command) -> Result<()> {
+    println!("Executing step: {} ({:?})", msg, cmd);
+
+    let status = cmd.stdin(Stdio::null()).status()?;
+    if status.success() {
+        println!("...ok");
+        return Ok(());
+    }
+
+    Err(Box::new(std::io::Error::new(
+        std::io::ErrorKind::Other,
+        format!("...failed with code {:?}", status.code()),
+    )))
 }
