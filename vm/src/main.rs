@@ -66,10 +66,6 @@ fn main() -> Result<()> {
             .args(&["miimon", "100"])
             .args(&["updelay", "200"]),
     )?;
-    script(
-        "Creating bond0:",
-        Command::new("sh").args(&["-c", "exit 1"]),
-    )?;
 
     script(
         "Making bond0 part of br0",
