@@ -16,7 +16,7 @@ done
 cd .. || exit 1
 mkdir -p scratch/gc-roots scratch/cpio-cache scratch/profiles
 cd nix-netboot-serve || exit 1
-RUST_LOG=example::api cargo run -- \
+RUST_LOG=nix-netboot-serve::web cargo run -- \
   --gc-root-dir ../scratch/gc-roots \
   --cpio-cache-dir ../scratch/cpio-cache/ \
   --profile-dir ../scratch/profiles/ \
