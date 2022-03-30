@@ -6,12 +6,12 @@ target_tap=tap42
 
 # Wait for tap interface
 while ! ip link show "$target_tap"; do
-  sleep 0
+  sleep 1
 done
 
 # Wait for bridge interface
 while ! ip link show br0; do
-  sleep 0
+  sleep 1
 done
 
 ip link set dev "$target_tap" master br0
